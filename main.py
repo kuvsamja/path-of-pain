@@ -1,5 +1,5 @@
 import pygame
-
+import random
 
 screen_width = 800
 screen_height = 600
@@ -21,7 +21,7 @@ class Player():
         self.height = height
         self.width = width
         self.camera = camera
-        self.speed = 10
+        self.speed = 1
 
     def move(self, buttons):
         if buttons[pygame.K_LEFT]:
@@ -29,9 +29,9 @@ class Player():
         if buttons[pygame.K_RIGHT]:
             self.x += self.speed
         if buttons[pygame.K_DOWN]:
-            self.y -= self.speed
-        if buttons[pygame.K_UP]:
             self.y += self.speed
+        if buttons[pygame.K_UP]:
+            self.y -= self.speed
 
     def draw(self, surface):
         screen_x = (self.x - self.camera.x) / self.camera.world_width * self.camera.pixel_width
@@ -40,7 +40,32 @@ class Player():
         height = self.height / self.camera.world_height * self.camera.pixel_height
 
 
-        pygame.draw.rect(surface, (255, 0, 0), (screen_x, screen_height - screen_y, width, height))
+        pygame.draw.rect(surface, (255, 0, 0), (screen_x, screen_y, width, height))
+    def worldColliding(self, world: World):
+        for platform in world.platforms:
+            if platform.playerCollision(self):
+                return True
+        return False
+    
+    def collisionPush(self, world: World):
+        if not self.worldColliding(world):
+            return;
+    
+        for platform in world.platforms:
+            overlap_x = min(self.x + self.width - platform.x, platform.x + platform.width - self.x)
+            overlap_y = min(self.y + self.height - platform.y, platform.y + platform.height - self.y)
+            
+            if overlap_x < overlap_y:
+                if self.x < platform.x:
+                    self.x -= overlap_x
+                else:
+                    self.x += overlap_x
+            else:
+                if self.y < platform.y:
+                    self.y -= overlap_y
+                else:
+                    self.y += overlap_y
+
 
 
 class AxisAlignedBox():
@@ -55,8 +80,13 @@ class AxisAlignedBox():
         width = self.width / camera.world_width * camera.pixel_width
         height = self.height / camera.world_height * camera.pixel_height
 
-
-        pygame.draw.rect(surface, (0, 255, 0), (screen_x, screen_height - screen_y, width, height))
+        pygame.draw.rect(surface, (0, 255, 0), (screen_x, screen_y, width, height))
+    def playerCollision(self, player: Player):
+        return (self.x < player.x + player.width and
+                self.x + self.width > player.x and
+                self.y < player.y + player.height and
+                self.y + self.height > player.y)
+    
 
 class World():
     def __init__(self, platforms: list[AxisAlignedBox]):
@@ -76,9 +106,11 @@ def main():
 
     world = World(
         [
-            AxisAlignedBox(10, 10, 10, 10)
+            AxisAlignedBox(10, 10, 100, 200),
+            # AxisAlignedBox(30, 10, 10, 10),
         ]
     )
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -89,6 +121,7 @@ def main():
 
         window.fill((0, 0, 0))
         player.move(buttons)
+        player.collisionPush(world)
         player.draw(window)
 
         world.draw(window, player_camera)
