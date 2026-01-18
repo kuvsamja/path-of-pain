@@ -68,7 +68,7 @@ class Player():
         self.dy = 0
         self.jump_timer = 0
         self.jump_speed = 5
-        self.jump_time = 30 # max time to hold a jump
+        self.jump_time = 30 # max jump ascension time in frames
         self.head_clipping = False
         self.can_jump = False
 
@@ -93,7 +93,7 @@ class Player():
         if (buttons[pygame.K_UP] and self.grounded and self.can_jump) or self.jump_timer > 0:
             if self.grounded:
                 self.can_jump = False
-                self.jump_timer = self.jump_time # max jump time in frames
+                self.jump_timer = self.jump_time
             
             self.dy = -self.jump_speed
             self.grav_acceleration=0
@@ -139,7 +139,6 @@ class Player():
                 else:
                     self.y += overlap_y
                     self.head_clipping = True
-            # TODO: ADD PROPER COLLISION PUSHING INVOLVING DX AND DY
 
 
 
@@ -201,7 +200,6 @@ def main():
         player.draw(window)
 
         world.draw(window, player_camera)
-        print(player.can_jump)
         pygame.display.flip()
         pygame.time.delay(int(1000 / fps))
 
