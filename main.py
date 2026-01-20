@@ -69,8 +69,23 @@ class Player():
         self.acceleration_y = 0
         self.dx = 0
         self.dy = 0
-                              # walk  falling wings  jumping dash   cdash, 
-        self.current_actions = [False, False, False, False, False, False]
+        
+        self.animation_walk = 0
+        self.animation_fall = 1
+        self.animation_ascending = 2
+        self.animation_dash = 3
+        self.animation_cdash = 4
+        self.animation_charging_cdash = 5
+        self.animation_claw = 6
+        self.current_actions = [
+                                    False, # walking
+                                    False, # falling
+                                    False, # jumping(going up)
+                                    False, # dashing
+                                    False, # cdashing
+                                    False, # charging cdash
+                                    False, # claw
+                                ]
         self.looking_dir = 1
 
         # jump
@@ -102,9 +117,9 @@ class Player():
         
         # dash
         self.can_dash = False
-        self.dash_speed = 15
+        self.dash_speed = 20
         self.dash_timer = 0
-        self.dash_time = 15
+        self.dash_time = 12
         self.dash_direction = 1
 
         #cdash
@@ -125,6 +140,7 @@ class Player():
         self.dash_key = pygame.K_LSHIFT
         self.cdash_key = pygame.K_c
         self.in_cdash = False
+        self.cdash_timer = 0
 
     def move(self, buttons, world: World):
         
@@ -242,15 +258,16 @@ class Player():
                 self.acceleration_y = 0
         if self.cdash_charge_timer >= self.cdash_charge_time and not buttons[self.cdash_key]:
             self.in_cdash = True
+            self.cdash_timer = 0
         if self.in_cdash:
             self.dx = self.looking_dir * self.cdash_speed
             self.dy = 0
             self.acceleration_y = 0
-        if (buttons[self.jump_key] or self.wall_to_left or self.wall_to_right) and self.in_cdash:
+            self.cdash_timer += 1
+        if (buttons[self.jump_key] or self.wall_to_left or self.wall_to_right) and self.in_cdash and self.cdash_timer > 3:
             self.in_cdash = False
             self.cdash_stopping = True
             self.cdash_stop_timer = self.cdash_stop_time
-        
         if self.cdash_stopping:
             self.cdash_stop_timer -= 1
             self.dx = self.looking_dir * (self.cdash_speed * (self.cdash_stop_timer / self.cdash_stop_time))
@@ -260,7 +277,7 @@ class Player():
             self.cdash_stopping = False
         if not buttons[self.cdash_key]:
             self.cdash_charge_timer = 0
-        print(self.dx)
+        
 
 
         self.dy += self.acceleration_y
@@ -272,7 +289,9 @@ class Player():
         self.camera.moveCamera(self)
 
         self.buttons_last_frame = buttons
-        
+    
+    # def animate(self):
+
 
     def draw(self, surface):
         screen_x = (self.x - self.camera.x) / self.camera.world_width * self.camera.pixel_width
