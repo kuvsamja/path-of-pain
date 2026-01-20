@@ -68,6 +68,10 @@ class Player():
         self.acceleration_y = 0
         self.dx = 0
         self.dy = 0
+                              # walk  falling wings  jumping dash   cdash, 
+        self.current_actions = [False, False, False, False, False, False]
+
+        # jump
         self.jump_timer = 0
         self.jump_speed = 5
         self.jump_time = 30 # max jump ascension time in frames
@@ -76,6 +80,8 @@ class Player():
         self.grounded = False
         self.head_clipping = False
         self.can_jump = False
+
+        # wall jump
         self.wall_to_right = False
         self.wall_to_left = False
         self.wall_ride = False
@@ -85,15 +91,22 @@ class Player():
         self.wall_push_speed = 5
         self.wall_jump_time = 15
         self.wall_push_direction = 1
+
+        # double jump
+        self.can_double_jump = False
+        self.double_jump_time = 15
+        self.double_jump_timer = 0
+        self.double_jump_speed = 7
         
 
         # CONTROLS
+        self.buttons_last_frame = []
         self.jump_key = pygame.K_z
         self.left_key = pygame.K_LEFT
         self.right_key = pygame.K_RIGHT
 
     def move(self, buttons, world: World):
-
+        
         dy_last_frame = self.dy
         dx_last_frame = self.dx
         self.dx = 0
@@ -110,6 +123,11 @@ class Player():
         if buttons[self.right_key]:
             self.dx += self.speed
 
+        # claw 
+        self.wall_ride = False
+        if (self.wall_to_left or self.wall_to_right) and not self.grounded and dy_last_frame >= 0:
+            self.wall_ride = True
+
         # jump
         self.jump_timer -= 1
         self.wall_push_timer -= 1
@@ -124,27 +142,43 @@ class Player():
             if self.grounded:
                 self.can_jump = False
                 self.jump_timer = self.jump_time
+
             if self.wall_ride:
                 self.can_jump = False
                 self.jump_timer = self.wall_jump_time
+
                 self.wall_push_timer = self.wall_push_time
                 if self.wall_to_left:
                     self.wall_push_direction = 1
                 if self.wall_to_right:
-                    self.wall_push_direction = -1                
+                    self.wall_push_direction = -1
+            if self.wall_push_timer >= 0:
+                self.dx = self.wall_push_speed * self.wall_push_direction
+
             self.dy = -self.jump_speed
             self.acceleration_y=0
-        if self.wall_push_timer >= 0:
-            self.dx = self.wall_push_speed * self.wall_push_direction
+
+        # double jump
+        self.double_jump_timer -= 1
+
+
+        if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
+            self.double_jump_timer = 0
+
+        if self.grounded or self.wall_ride:
+            self.can_double_jump = True
+        
+        if (self.can_double_jump and buttons[self.jump_key] and not self.buttons_last_frame[self.jump_key] and not (self.grounded or  self.wall_ride)) or self.double_jump_timer > 0:
+            if self.can_double_jump:
+                self.can_double_jump = False
+                self.double_jump_timer = self.double_jump_time
+            self.dy = -self.jump_speed
+            self.acceleration_y=0
+        
 
         # claw
-        self.wall_ride = False
-        if (self.wall_to_left or self.wall_to_right) and not self.grounded and dy_last_frame >= 0:
-            self.wall_ride = True
-
         if self.wall_ride:
             self.acceleration_y = self.wall_ride_speed
-    
 
 
         self.dy += self.acceleration_y
@@ -154,6 +188,8 @@ class Player():
         self.collisionPush(world)
         self.touchCheck(world)
         self.camera.moveCamera(self)
+
+        self.buttons_last_frame = buttons
         
 
     def draw(self, surface):
@@ -170,7 +206,6 @@ class Player():
         return False
     
     def collisionPush(self, world: World):
-
         for platform in world.platforms:
             if not platform.playerCollision(self):
                 continue
@@ -256,8 +291,8 @@ def main():
 
     window = pygame.display.set_mode((screen_width, screen_height))
 
-    player_camera = Camera(0, 0, 768, 432, screen_width, screen_height)
-    player = Player(20, 20, 20, 40, player_camera)
+    camera = Camera(0, 0, 768, 432, screen_width, screen_height)
+    player = Player(20, 20, 20, 40, camera)
 
     world = World(
         [
@@ -280,8 +315,10 @@ def main():
         window.fill((0, 0, 0))
         player.move(buttons, world)
         player.draw(window)
-        world.draw(window, player_camera)
+        world.draw(window, camera)
 
+
+        print(player.can_double_jump)
         pygame.display.flip()
         pygame.time.delay(int(1000 / fps))
 
