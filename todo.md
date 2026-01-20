@@ -5,3 +5,4 @@
 -[ ] Make the player an AAB
 -[ ] Add physics frames and make it fps independent
 -[ ] Make walking of a wallride be more like hollow knight
+-[ ] Apply some downwards speed when letting go of a jump

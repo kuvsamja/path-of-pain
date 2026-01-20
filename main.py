@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 screen_width = 1920
 screen_height = 1080
@@ -70,6 +71,7 @@ class Player():
         self.dy = 0
                               # walk  falling wings  jumping dash   cdash, 
         self.current_actions = [False, False, False, False, False, False]
+        self.looking_dir = 1
 
         # jump
         self.jump_timer = 0
@@ -98,12 +100,20 @@ class Player():
         self.double_jump_timer = 0
         self.double_jump_speed = 7
         
+        # dash
+        self.can_dash = False
+        self.dash_speed = 15
+        self.dash_timer = 0
+        self.dash_time = 15
+        self.dash_direction = 1
+
 
         # CONTROLS
         self.buttons_last_frame = []
         self.jump_key = pygame.K_z
         self.left_key = pygame.K_LEFT
         self.right_key = pygame.K_RIGHT
+        self.dash_key = pygame.K_c
 
     def move(self, buttons, world: World):
         
@@ -120,15 +130,23 @@ class Player():
         # basic movement (left-right)
         if buttons[self.left_key]:
             self.dx -= self.speed
+            self.looking_dir = -1
         if buttons[self.right_key]:
             self.dx += self.speed
+            self.looking_dir = 1
 
         # claw 
         self.wall_ride = False
         if (self.wall_to_left or self.wall_to_right) and not self.grounded and dy_last_frame >= 0:
             self.wall_ride = True
+        if self.wall_to_left and self.wall_ride:
+            self.looking_dir = 1
+            self.dash_direction = 1
+        if self.wall_to_right and self.wall_ride:
+            self.looking_dir = -1
+            self.dash_direction = -1
 
-        # jump
+        # jump and claw jump (and some double jump)
         self.jump_timer -= 1
         self.wall_push_timer -= 1
 
@@ -180,6 +198,26 @@ class Player():
         if self.wall_ride:
             self.acceleration_y = self.wall_ride_speed
 
+        # dash
+        if buttons[self.left_key]:
+            self.dash_direction = -1
+        if buttons[self.right_key]:
+            self.dash_direction = 1
+
+        self.dash_timer -= 1
+        if self.grounded or self.wall_ride:
+            self.can_dash = True
+        if buttons[self.dash_key] and not self.buttons_last_frame[self.dash_key] and self.dash_timer <= 0 and self.can_dash:
+            self.can_dash = False
+            self.dash_timer = self.dash_time
+            self.dash_speed_current = self.dash_speed * self.dash_direction
+        if self.dash_timer > 0:
+            self.dx = self.dash_speed_current * math.sin(self.dash_timer / self.dash_time)
+            self.dy = 0
+            self.acceleration_y = 0
+            self.looking_dir = self.dash_speed_current // self.dash_speed
+            self.dash_direction = self.dash_speed_current // self.dash_speed
+        print(self.can_dash)
 
         self.dy += self.acceleration_y
         self.x += self.dx
@@ -222,6 +260,7 @@ class Player():
                     self.y -= overlap_y
                 else:
                     self.y += overlap_y
+
     def touchCheck(self, world: World):
         self.grounded = False
         self.head_clipping = False
@@ -317,8 +356,6 @@ def main():
         player.draw(window)
         world.draw(window, camera)
 
-
-        print(player.can_double_jump)
         pygame.display.flip()
         pygame.time.delay(int(1000 / fps))
 
