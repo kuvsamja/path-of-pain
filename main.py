@@ -107,13 +107,24 @@ class Player():
         self.dash_time = 15
         self.dash_direction = 1
 
+        #cdash
+        self.can_cdash = False
+        self.cdash_speed = 15
+        self.cdash_charge_time = 60 # seconds
+        self.cdash_wall_stun_time = 10
+        self.cdash_stop_time = 15
+        self.cdash_stop_timer = 0
+        self.cdash_stopping = False
+        self.cdash_charge_timer = 0
 
         # CONTROLS
         self.buttons_last_frame = []
         self.jump_key = pygame.K_z
         self.left_key = pygame.K_LEFT
         self.right_key = pygame.K_RIGHT
-        self.dash_key = pygame.K_c
+        self.dash_key = pygame.K_LSHIFT
+        self.cdash_key = pygame.K_c
+        self.in_cdash = False
 
     def move(self, buttons, world: World):
         
@@ -122,102 +133,135 @@ class Player():
         self.dx = 0
         self.dy = 0
 
+        
         # gravity
         self.acceleration_y += self.gravity
         if self.grounded:
             self.acceleration_y = 0
 
-        # basic movement (left-right)
-        if buttons[self.left_key]:
-            self.dx -= self.speed
-            self.looking_dir = -1
-        if buttons[self.right_key]:
-            self.dx += self.speed
-            self.looking_dir = 1
+        if not self.in_cdash and not self.cdash_stopping:
+            # basic movement (left-right)
+            if buttons[self.left_key]:
+                self.dx -= self.speed
+                self.looking_dir = -1
+            if buttons[self.right_key]:
+                self.dx += self.speed
+                self.looking_dir = 1
 
-        # claw 
-        self.wall_ride = False
-        if (self.wall_to_left or self.wall_to_right) and not self.grounded and dy_last_frame >= 0:
-            self.wall_ride = True
-        if self.wall_to_left and self.wall_ride:
-            self.looking_dir = 1
-            self.dash_direction = 1
-        if self.wall_to_right and self.wall_ride:
-            self.looking_dir = -1
-            self.dash_direction = -1
+            # claw 
+            self.wall_ride = False
+            if (self.wall_to_left or self.wall_to_right) and not self.grounded and dy_last_frame >= 0:
+                self.wall_ride = True
+            if self.wall_to_left and self.wall_ride:
+                self.looking_dir = 1
+                self.dash_direction = 1
+            if self.wall_to_right and self.wall_ride:
+                self.looking_dir = -1
+                self.dash_direction = -1
 
-        # jump and claw jump (and some double jump)
-        self.jump_timer -= 1
-        self.wall_push_timer -= 1
+            # jump and claw jump (and some double jump)
+            self.jump_timer -= 1
+            self.wall_push_timer -= 1
 
-        if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
-            self.jump_timer = 0
+            if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
+                self.jump_timer = 0
 
-        if not buttons[self.jump_key]:
-            self.can_jump = True
+            if not buttons[self.jump_key]:
+                self.can_jump = True
 
-        if (buttons[self.jump_key] and (self.grounded or self.wall_ride) and self.can_jump) or self.jump_timer > 0:
-            if self.grounded:
-                self.can_jump = False
-                self.jump_timer = self.jump_time
+            if (buttons[self.jump_key] and (self.grounded or self.wall_ride) and self.can_jump) or self.jump_timer > 0:
+                if self.grounded:
+                    self.can_jump = False
+                    self.jump_timer = self.jump_time
 
+                if self.wall_ride:
+                    self.can_jump = False
+                    self.jump_timer = self.wall_jump_time
+
+                    self.wall_push_timer = self.wall_push_time
+                    if self.wall_to_left:
+                        self.wall_push_direction = 1
+                    if self.wall_to_right:
+                        self.wall_push_direction = -1
+                if self.wall_push_timer >= 0:
+                    self.dx = self.wall_push_speed * self.wall_push_direction
+
+                self.dy = -self.jump_speed
+                self.acceleration_y=0
+
+            # double jump
+            self.double_jump_timer -= 1
+
+
+            if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
+                self.double_jump_timer = 0
+
+            if self.grounded or self.wall_ride:
+                self.can_double_jump = True
+            
+            if (self.can_double_jump and buttons[self.jump_key] and not self.buttons_last_frame[self.jump_key] and not (self.grounded or  self.wall_ride)) or self.double_jump_timer > 0:
+                if self.can_double_jump:
+                    self.can_double_jump = False
+                    self.double_jump_timer = self.double_jump_time
+                self.dy = -self.jump_speed
+                self.acceleration_y=0
+            
+
+            # claw
             if self.wall_ride:
-                self.can_jump = False
-                self.jump_timer = self.wall_jump_time
+                self.acceleration_y = self.wall_ride_speed
 
-                self.wall_push_timer = self.wall_push_time
-                if self.wall_to_left:
-                    self.wall_push_direction = 1
-                if self.wall_to_right:
-                    self.wall_push_direction = -1
-            if self.wall_push_timer >= 0:
-                self.dx = self.wall_push_speed * self.wall_push_direction
+            # dash
+            if buttons[self.left_key]:
+                self.dash_direction = -1
+            if buttons[self.right_key]:
+                self.dash_direction = 1
 
-            self.dy = -self.jump_speed
-            self.acceleration_y=0
-
-        # double jump
-        self.double_jump_timer -= 1
-
-
-        if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
-            self.double_jump_timer = 0
-
-        if self.grounded or self.wall_ride:
-            self.can_double_jump = True
+            self.dash_timer -= 1
+            if self.grounded or self.wall_ride:
+                self.can_dash = True
+            if buttons[self.dash_key] and not self.buttons_last_frame[self.dash_key] and self.dash_timer <= 0 and self.can_dash:
+                self.can_dash = False
+                self.dash_timer = self.dash_time
+                self.dash_speed_current = self.dash_speed * self.dash_direction
+            if self.dash_timer > 0:
+                self.dx = self.dash_speed_current * math.sin(self.dash_timer / self.dash_time)
+                self.dy = 0
+                self.acceleration_y = 0
+                self.looking_dir = self.dash_speed_current // self.dash_speed
+                self.dash_direction = self.dash_speed_current // self.dash_speed
         
-        if (self.can_double_jump and buttons[self.jump_key] and not self.buttons_last_frame[self.jump_key] and not (self.grounded or  self.wall_ride)) or self.double_jump_timer > 0:
-            if self.can_double_jump:
-                self.can_double_jump = False
-                self.double_jump_timer = self.double_jump_time
-            self.dy = -self.jump_speed
-            self.acceleration_y=0
+        #cdash
+        self.can_cdash = (self.grounded or self.wall_ride) and not self.in_cdash
         
-
-        # claw
-        if self.wall_ride:
-            self.acceleration_y = self.wall_ride_speed
-
-        # dash
-        if buttons[self.left_key]:
-            self.dash_direction = -1
-        if buttons[self.right_key]:
-            self.dash_direction = 1
-
-        self.dash_timer -= 1
-        if self.grounded or self.wall_ride:
-            self.can_dash = True
-        if buttons[self.dash_key] and not self.buttons_last_frame[self.dash_key] and self.dash_timer <= 0 and self.can_dash:
-            self.can_dash = False
-            self.dash_timer = self.dash_time
-            self.dash_speed_current = self.dash_speed * self.dash_direction
-        if self.dash_timer > 0:
-            self.dx = self.dash_speed_current * math.sin(self.dash_timer / self.dash_time)
+        if self.can_cdash and buttons[self.cdash_key]:
+            self.cdash_charge_timer += 1
+            self.dx = 0
+            if self.wall_ride and not self.in_cdash:
+                self.dy = 0
+                self.acceleration_y = 0
+        if self.cdash_charge_timer >= self.cdash_charge_time and not buttons[self.cdash_key]:
+            self.in_cdash = True
+        if self.in_cdash:
+            self.dx = self.looking_dir * self.cdash_speed
             self.dy = 0
             self.acceleration_y = 0
-            self.looking_dir = self.dash_speed_current // self.dash_speed
-            self.dash_direction = self.dash_speed_current // self.dash_speed
-        print(self.can_dash)
+        if (buttons[self.jump_key] or self.wall_to_left or self.wall_to_right) and self.in_cdash:
+            self.in_cdash = False
+            self.cdash_stopping = True
+            self.cdash_stop_timer = self.cdash_stop_time
+        
+        if self.cdash_stopping:
+            self.cdash_stop_timer -= 1
+            self.dx = self.looking_dir * (self.cdash_speed * (self.cdash_stop_timer / self.cdash_stop_time))
+            self.dy = 0
+            self.acceleration_y = 0
+        if self.dx == 0 and self.cdash_stopping:
+            self.cdash_stopping = False
+        if not buttons[self.cdash_key]:
+            self.cdash_charge_timer = 0
+        print(self.dx)
+
 
         self.dy += self.acceleration_y
         self.x += self.dx
