@@ -104,7 +104,7 @@ class Player():
         self.grounded = False
         self.head_clipping = False
         self.can_jump = False
-        self.jump_exit_speed = -1.5
+        self.jump_exit_speed = -0.33
 
         # wall jump
         self.wall_to_right = False
