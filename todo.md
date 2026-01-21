@@ -1,9 +1,9 @@
--[ ] Make jump more like in hollow knight (fix Player.can_jump)
--[ ] Make collision push use dx and dy to better calculate the collisions
--[ ] Make camera follow the player smoother (make camera speed get faster as the player goes farther off screen)
--[ ] Mabye make camera softzone and deadzone be precentages
--[ ] Make the player an AAB
--[ ] Add physics frames and make it fps independent
--[ ] Make walking of a wallride be more like hollow knight
--[ ] Apply some downwards speed when letting go of a jump
--[ ] Change the dash speed formula
+- [ ] Make jump more like in hollow knight (fix Player.can_jump)
+- [ ] Make collision push use dx and dy to better calculate the collisions
+- [ ] Make camera follow the player smoother (make camera speed get faster as the player goes farther off screen)
+- [ ] Mabye make camera softzone and deadzone be precentages
+- [ ] Make the player an AAB
+- [ ] Add physics frames and make it fps independent
+- [x] Make walking of a wallride be more like hollow knight
+- [x] Apply some downwards speed when letting go of a jump
+- [ ] Change the dash speed formula
