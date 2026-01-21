@@ -294,7 +294,8 @@ class Player():
         self.camera.moveCamera(self)
 
         self.buttons_last_frame = buttons
-
+        
+        self.current_animations[self.animation_claw] = self.wall_ride
         # self.animation_walk = 0
         # self.animation_fall = 1
         # self.animation_ascending = 2
@@ -310,17 +311,24 @@ class Player():
         return n
 
     def animate(self, surface: pygame.surface.Surface):
-        x, y = self.draw(surface)
+        x, y, width, height = self.draw(surface)
+        x += width / 2
         self.animation_frame += 1
         image_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
+        flip = 1
         if self.current_animations[self.animation_walk]:
             image_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
-        
-        if self.looking_dir == 1:
+            flip = 1
+        if self.current_animations[self.animation_claw]:
+            image_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
+            flip = -1
+
+
+        if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
         else:
             sprite = pygame.image.load(image_name).convert_alpha()
-        
+        x -= sprite.get_width() / 2
 
         surface.blit(sprite, (x, y)) # cekaj
 
@@ -331,7 +339,7 @@ class Player():
         height = self.height / self.camera.world_height * self.camera.pixel_height
 
         # pygame.draw.rect(surface, (255, 0, 0), (screen_x, screen_y, width, height))
-        return screen_x, screen_y
+        return screen_x, screen_y, width, height
     def worldColliding(self, world: World):
         for platform in world.platforms:
             if platform.playerCollision(self):
@@ -426,7 +434,7 @@ def main():
     window = pygame.display.set_mode((screen_width, screen_height))
 
     camera = Camera(0, 0, 768, 432, screen_width, screen_height)
-    player = Player(20, 20, 22, 50, camera)
+    player = Player(20, 20, 18, 51, camera)
 
     world = World(
         [
@@ -448,8 +456,8 @@ def main():
 
         window.fill((50, 100, 240))
         player.move(buttons, world)
-        player.animate(window)
         world.draw(window, camera)
+        player.animate(window)
 
         pygame.display.flip()
         pygame.time.delay(int(1000 / fps))
