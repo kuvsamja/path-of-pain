@@ -96,6 +96,7 @@ class Player():
 
         # jump
         self.jump_timer = 0
+        self.jump_timer_last_frame = -1
         self.jump_speed = 5
         self.jump_time = 30 # max jump ascension time in frames
         self.touch_check_height = 0.01 # height of the ground / head collision boxes
@@ -103,6 +104,7 @@ class Player():
         self.grounded = False
         self.head_clipping = False
         self.can_jump = False
+        self.jump_exit_speed = -1.5
 
         # wall jump
         self.wall_to_right = False
@@ -117,9 +119,11 @@ class Player():
 
         # double jump
         self.can_double_jump = False
-        self.double_jump_time = 15
+        self.double_jump_time = 20
         self.double_jump_timer = 0
+        self.double_jump_timer_last_frame = -1
         self.double_jump_speed = 7
+        self.double_jump_exit_speed = -2
         
         # dash
         self.can_dash = False
@@ -150,17 +154,19 @@ class Player():
         self.cdash_timer = 0
 
     def move(self, buttons, world: World):
+        self.jump_timer_last_frame = self.jump_timer
+        self.double_jump_timer_last_frame = self.double_jump_timer
         
         dy_last_frame = self.dy
         dx_last_frame = self.dx
         self.dx = 0
-        self.dy = 0
+        # self.dy = 0
 
         
         # gravity
-        self.acceleration_y += self.gravity
+        self.dy += self.gravity
         if self.grounded:
-            self.acceleration_y = 0
+            self.dy = 0
 
         self.current_animations[self.animation_walk] = False
         if not self.in_cdash and not self.cdash_stopping and self.cdash_charge_timer <= 0:
@@ -195,6 +201,7 @@ class Player():
             if not buttons[self.jump_key]:
                 self.can_jump = True
 
+            # if self.double_jump_timer == 0 and 
             if (buttons[self.jump_key] and (self.grounded or self.wall_ride) and self.can_jump) or self.jump_timer > 0:
                 if self.grounded:
                     self.can_jump = False
@@ -218,7 +225,6 @@ class Player():
             # double jump
             self.double_jump_timer -= 1
 
-
             if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
                 self.double_jump_timer = 0
 
@@ -230,12 +236,11 @@ class Player():
                     self.can_double_jump = False
                     self.double_jump_timer = self.double_jump_time
                 self.dy = -self.jump_speed
-                self.acceleration_y=0
             
 
             # claw
             if self.wall_ride:
-                self.acceleration_y = self.wall_ride_speed
+                self.dy = self.wall_ride_speed
 
             # dash
             if buttons[self.left_key]:
@@ -256,7 +261,13 @@ class Player():
                 self.acceleration_y = 0
                 self.looking_dir = self.dash_speed_current // self.dash_speed
                 self.dash_direction = self.dash_speed_current // self.dash_speed
-        
+
+            # jump / doublejump end
+            if self.jump_timer == 0 and self.jump_timer_last_frame > 0:
+                self.dy = self.jump_exit_speed
+            if self.double_jump_timer == 0 and self.double_jump_timer_last_frame > 0:
+                self.dy = self.double_jump_exit_speed
+
         if self.dash_timer <= 0:
             #cdash
             self.can_cdash = (self.grounded or self.wall_ride) and not self.in_cdash
@@ -266,14 +277,12 @@ class Player():
                 self.dx = 0
                 if self.wall_ride and not self.in_cdash:
                     self.dy = 0
-                    self.acceleration_y = 0
             if self.cdash_charge_timer >= self.cdash_charge_time and not buttons[self.cdash_key]:
                 self.in_cdash = True
                 self.cdash_timer = 0
             if self.in_cdash:
                 self.dx = self.looking_dir * self.cdash_speed
                 self.dy = 0
-                self.acceleration_y = 0
                 self.cdash_timer += 1
             if buttons[self.jump_key] and self.in_cdash and self.cdash_timer > 3:
                 self.in_cdash = False
@@ -287,21 +296,18 @@ class Player():
                 self.cdash_stop_timer -= 1
                 self.dx = self.looking_dir * (self.cdash_speed * (self.cdash_stop_timer / self.cdash_stop_time))
                 self.dy = 0
-                self.acceleration_y = 0
             if self.cdash_stop_wall:
                 self.cdash_stop_timer -= 1
                 self.dx = 0
                 self.dy = 0
-                self.acceleration_y = 0
             if self.cdash_stop_timer <= 0 and (self.cdash_stopping or self.cdash_stop_wall):
                 self.cdash_stopping = False
                 self.cdash_stop_wall = False
             if not buttons[self.cdash_key]:
                 self.cdash_charge_timer = 0
-        
 
 
-        self.dy += self.acceleration_y
+
         self.x += self.dx
         self.y += self.dy
 
