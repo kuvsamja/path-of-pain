@@ -72,6 +72,7 @@ class Player():
         
         self.animation_frame = 0
         self.animation_speed = 0.2
+        
         self.animation_walk = 0
         self.animation_fall = 1
         self.animation_ascending = 2
@@ -81,6 +82,7 @@ class Player():
         self.animation_claw = 6
         self.animation_cdash_stop_wall = 7
         self.animation_cdash_stop = 8
+        self.animation_wings = 9
         self.current_animations = [
                                     False, # walking
                                     False, # falling
@@ -91,6 +93,7 @@ class Player():
                                     False, # claw
                                     False, # cdash stop wall
                                     False, # cdash stop
+                                    False, # Wings
                                 ]
         self.looking_dir = 1
 
@@ -127,9 +130,9 @@ class Player():
         
         # dash
         self.can_dash = False
-        self.dash_speed = 20
+        self.dash_speed = 15
         self.dash_timer = 0
-        self.dash_time = 12
+        self.dash_time = 20
         self.dash_direction = 1
 
         #cdash
@@ -256,7 +259,7 @@ class Player():
                 self.dash_timer = self.dash_time
                 self.dash_speed_current = self.dash_speed * self.dash_direction
             if self.dash_timer > 0:
-                self.dx = self.dash_speed_current * math.sin(self.dash_timer / self.dash_time)
+                self.dx = self.dash_speed_current * math.sin(3 * self.dash_timer / self.dash_time)
                 self.dy = 0
                 self.acceleration_y = 0
                 self.looking_dir = self.dash_speed_current // self.dash_speed
@@ -269,6 +272,7 @@ class Player():
                 self.dy = self.double_jump_exit_speed
 
         if self.dash_timer <= 0:
+
             #cdash
             self.can_cdash = (self.grounded or self.wall_ride) and not self.in_cdash
             
@@ -334,15 +338,21 @@ class Player():
         self.current_animations[self.animation_cdash_stop_wall] = False
         if self.cdash_stop_wall:
             self.current_animations[self.animation_cdash_stop_wall] = True
+        
+        self.current_animations[self.animation_dash] = False
+        if self.dash_timer > 0:
+            self.current_animations[self.animation_dash] = True
+
         # self.animation_walk = 0             done
         # self.animation_fall = 1             
         # self.animation_ascending = 2        
-        # self.animation_dash = 3             
-        # self.animation_cdash = 4            
+        # self.animation_dash = 3             done
+        # self.animation_cdash = 4            done
         # self.animation_charging_cdash = 5   done
         # self.animation_claw = 6             done
-        # self.animation_cdash_stop_wall = 7
-        # self.animation_cdash_stop = 8
+        # self.animation_cdash_stop_wall = 7  done
+        # self.animation_cdash_stop = 8       done
+        # self.animation_wings = 9            
     
     @staticmethod
     def twoDigitNum(n):
@@ -378,7 +388,7 @@ class Player():
             image_name = 'assets/the-knight/088.SD Charge Ground End/088-' + self.twoDigitNum(str(int((self.cdash_stop_time - self.cdash_stop_timer) / self.cdash_stop_time * 4) % 4)) + '.png'
             # flip = -int(self.dx / abs(self.dx))
         if self.current_animations[self.animation_cdash_stop_wall]:
-            flip = 1
+            flip = -1
             image_name = 'assets/the-knight/091.SD Hit Wall/091-00.png'
         if self.current_animations[self.animation_charging_cdash] and self.current_animations[self.animation_claw]:
             flip = -1
@@ -386,8 +396,10 @@ class Player():
                 image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 9)) + '.png'
             else:
                 image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 2 + 7)) + '.png'
-
-        
+        if self.current_animations[self.animation_dash]:
+            flip = 1
+            image_name = 'assets/the-knight/002.Dash/002-' + self.twoDigitNum(str(int(self.dash_timer / self.dash_time * 12) % 12)) + '.png'
+            x += -self.looking_dir * 50
         if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
         else:

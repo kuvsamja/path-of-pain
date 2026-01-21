@@ -7,3 +7,5 @@
 - [x] Make walking of a wallride be more like hollow knight
 - [x] Apply some downwards speed when letting go of a jump
 - [ ] Change the dash speed formula
+- [ ] Finish animations
+- [ ] Delay between dashes
