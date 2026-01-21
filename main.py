@@ -79,6 +79,8 @@ class Player():
         self.animation_cdash = 4
         self.animation_charging_cdash = 5
         self.animation_claw = 6
+        self.animation_cdash_stop_wall = 7
+        self.animation_cdash_stop = 8
         self.current_animations = [
                                     False, # walking
                                     False, # falling
@@ -87,6 +89,8 @@ class Player():
                                     False, # cdashing
                                     False, # charging cdash
                                     False, # claw
+                                    False, # cdash stop wall
+                                    False, # cdash stop
                                 ]
         self.looking_dir = 1
 
@@ -127,11 +131,12 @@ class Player():
         #cdash
         self.can_cdash = False
         self.cdash_speed = 15
-        self.cdash_charge_time = 60 # seconds
-        self.cdash_wall_stun_time = 10
-        self.cdash_stop_time = 15
+        self.cdash_charge_time = 50
+        self.cdash_wall_stun_time = 20
+        self.cdash_stop_time = 30
         self.cdash_stop_timer = 0
         self.cdash_stopping = False
+        self.cdash_stop_wall = False
         self.cdash_charge_timer = 0
 
         # CONTROLS
@@ -252,36 +257,47 @@ class Player():
                 self.looking_dir = self.dash_speed_current // self.dash_speed
                 self.dash_direction = self.dash_speed_current // self.dash_speed
         
-        #cdash
-        self.can_cdash = (self.grounded or self.wall_ride) and not self.in_cdash
-        
-        if self.can_cdash and buttons[self.cdash_key]:
-            self.cdash_charge_timer += 1
-            self.dx = 0
-            if self.wall_ride and not self.in_cdash:
+        if self.dash_timer <= 0:
+            #cdash
+            self.can_cdash = (self.grounded or self.wall_ride) and not self.in_cdash
+            
+            if self.can_cdash and buttons[self.cdash_key]:
+                self.cdash_charge_timer += 1
+                self.dx = 0
+                if self.wall_ride and not self.in_cdash:
+                    self.dy = 0
+                    self.acceleration_y = 0
+            if self.cdash_charge_timer >= self.cdash_charge_time and not buttons[self.cdash_key]:
+                self.in_cdash = True
+                self.cdash_timer = 0
+            if self.in_cdash:
+                self.dx = self.looking_dir * self.cdash_speed
                 self.dy = 0
                 self.acceleration_y = 0
-        if self.cdash_charge_timer >= self.cdash_charge_time and not buttons[self.cdash_key]:
-            self.in_cdash = True
-            self.cdash_timer = 0
-        if self.in_cdash:
-            self.dx = self.looking_dir * self.cdash_speed
-            self.dy = 0
-            self.acceleration_y = 0
-            self.cdash_timer += 1
-        if (buttons[self.jump_key] or self.wall_to_left or self.wall_to_right) and self.in_cdash and self.cdash_timer > 3:
-            self.in_cdash = False
-            self.cdash_stopping = True
-            self.cdash_stop_timer = self.cdash_stop_time
-        if self.cdash_stopping:
-            self.cdash_stop_timer -= 1
-            self.dx = self.looking_dir * (self.cdash_speed * (self.cdash_stop_timer / self.cdash_stop_time))
-            self.dy = 0
-            self.acceleration_y = 0
-        if self.dx == 0 and self.cdash_stopping:
-            self.cdash_stopping = False
-        if not buttons[self.cdash_key]:
-            self.cdash_charge_timer = 0
+                self.cdash_timer += 1
+            if buttons[self.jump_key] and self.in_cdash and self.cdash_timer > 3:
+                self.in_cdash = False
+                self.cdash_stopping = True
+                self.cdash_stop_timer = self.cdash_stop_time
+            if (self.wall_to_left or self.wall_to_right) and self.in_cdash and self.cdash_timer > 3:
+                self.in_cdash = False
+                self.cdash_stop_wall = True
+                self.cdash_stop_timer = self.cdash_wall_stun_time
+            if self.cdash_stopping:
+                self.cdash_stop_timer -= 1
+                self.dx = self.looking_dir * (self.cdash_speed * (self.cdash_stop_timer / self.cdash_stop_time))
+                self.dy = 0
+                self.acceleration_y = 0
+            if self.cdash_stop_wall:
+                self.cdash_stop_timer -= 1
+                self.dx = 0
+                self.dy = 0
+                self.acceleration_y = 0
+            if self.cdash_stop_timer <= 0 and (self.cdash_stopping or self.cdash_stop_wall):
+                self.cdash_stopping = False
+                self.cdash_stop_wall = False
+            if not buttons[self.cdash_key]:
+                self.cdash_charge_timer = 0
         
 
 
@@ -296,13 +312,31 @@ class Player():
         self.buttons_last_frame = buttons
         
         self.current_animations[self.animation_claw] = self.wall_ride
-        # self.animation_walk = 0
-        # self.animation_fall = 1
-        # self.animation_ascending = 2
-        # self.animation_dash = 3
-        # self.animation_cdash = 4
-        # self.animation_charging_cdash = 5
-        # self.animation_claw = 6
+
+        self.current_animations[self.animation_charging_cdash] = False
+        if self.cdash_charge_timer > 0 and not self.in_cdash and not self.cdash_stopping:
+            self.current_animations[self.animation_charging_cdash] = True
+        
+        self.current_animations[self.animation_cdash] = False
+        if self.in_cdash:
+            self.current_animations[self.animation_cdash] = True
+
+        self.current_animations[self.animation_cdash_stop] = False
+        if self.cdash_stopping:
+            self.current_animations[self.animation_cdash_stop] = True
+
+        self.current_animations[self.animation_cdash_stop_wall] = False
+        if self.cdash_stop_wall:
+            self.current_animations[self.animation_cdash_stop_wall] = True
+        # self.animation_walk = 0             done
+        # self.animation_fall = 1             
+        # self.animation_ascending = 2        
+        # self.animation_dash = 3             
+        # self.animation_cdash = 4            
+        # self.animation_charging_cdash = 5   done
+        # self.animation_claw = 6             done
+        # self.animation_cdash_stop_wall = 7
+        # self.animation_cdash_stop = 8
     
     @staticmethod
     def twoDigitNum(n):
@@ -313,6 +347,7 @@ class Player():
     def animate(self, surface: pygame.surface.Surface):
         x, y, width, height = self.draw(surface)
         x += width / 2
+        y += height / 2
         self.animation_frame += 1
         image_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
         flip = 1
@@ -322,14 +357,37 @@ class Player():
         if self.current_animations[self.animation_claw]:
             image_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
             flip = -1
+        if self.current_animations[self.animation_charging_cdash]:
+            flip = 1
+            if self.cdash_charge_timer < self.cdash_charge_time:
+                image_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 8)) + '.png'
+            else:
+                image_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 4 + 4)) + '.png'
+        if self.current_animations[self.animation_cdash]:
+            flip = 1
+            image_name = 'assets/the-knight/086.SD Dash/086-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
+            # flip = -int(self.dx / abs(self.dx))
+        if self.current_animations[self.animation_cdash_stop]:
+            flip = 1
+            image_name = 'assets/the-knight/088.SD Charge Ground End/088-' + self.twoDigitNum(str(int((self.cdash_stop_time - self.cdash_stop_timer) / self.cdash_stop_time * 4) % 4)) + '.png'
+            # flip = -int(self.dx / abs(self.dx))
+        if self.current_animations[self.animation_cdash_stop_wall]:
+            flip = 1
+            image_name = 'assets/the-knight/091.SD Hit Wall/091-00.png'
+        if self.current_animations[self.animation_charging_cdash] and self.current_animations[self.animation_claw]:
+            flip = -1
+            if self.cdash_charge_timer < self.cdash_charge_time:
+                image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 9)) + '.png'
+            else:
+                image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 2 + 7)) + '.png'
 
-
+        
         if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
         else:
             sprite = pygame.image.load(image_name).convert_alpha()
         x -= sprite.get_width() / 2
-
+        y -= sprite.get_height() / 2
         surface.blit(sprite, (x, y)) # cekaj
 
     def draw(self, surface):
@@ -372,8 +430,9 @@ class Player():
 
         feet_box = AxisAlignedBox(self.x, self.y + self.touch_check_height + self.height, self.width, self.touch_check_height)
         head_box = AxisAlignedBox(self.x, self.y - self.touch_check_height, self.width, self.touch_check_height)
-        left_box = AxisAlignedBox(self.x - self.touch_check_width, self.y, self.touch_check_width, self.height)
-        right_box = AxisAlignedBox(self.x + self.width, self.y, self.touch_check_width, self.height)
+        left_box = AxisAlignedBox(self.x - self.touch_check_width, self.y + self.height / 4, self.touch_check_width, self.height / 2)
+        right_box = AxisAlignedBox(self.x + self.width, self.y + self.height / 4, self.touch_check_width, self.height / 2)
+
         if world.AABColliding(feet_box):
             self.grounded = True
         if world.AABColliding(head_box):
@@ -431,6 +490,7 @@ class World():
 def main():
     pygame.init()
 
+    global window
     window = pygame.display.set_mode((screen_width, screen_height))
 
     camera = Camera(0, 0, 768, 432, screen_width, screen_height)
@@ -438,8 +498,9 @@ def main():
 
     world = World(
         [
-            AxisAlignedBox(0, 250, 400, 300),
+            AxisAlignedBox(-1000, 250, 4000, 300),
             AxisAlignedBox(50, 125, 100, 20),
+            AxisAlignedBox(350, 125, 100, 20),
             AxisAlignedBox(175, 0, 100, 200),
             AxisAlignedBox(50, -125, 100, 20),
             AxisAlignedBox(175, -250, 100, 20),
