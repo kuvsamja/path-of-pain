@@ -72,7 +72,7 @@ class Player():
         
         self.animation_frame = 0
         self.animation_speed = 0.2
-        
+
         self.animation_walk = 0
         self.animation_fall = 1
         self.animation_ascending = 2
@@ -83,6 +83,7 @@ class Player():
         self.animation_cdash_stop_wall = 7
         self.animation_cdash_stop = 8
         self.animation_wings = 9
+        self.animation_start_falling = 10
         self.current_animations = [
                                     False, # walking
                                     False, # falling
@@ -94,6 +95,7 @@ class Player():
                                     False, # cdash stop wall
                                     False, # cdash stop
                                     False, # Wings
+                                    False, # Start falling
                                 ]
         self.looking_dir = 1
 
@@ -108,6 +110,8 @@ class Player():
         self.head_clipping = False
         self.can_jump = False
         self.jump_exit_speed = -0.33
+        self.fall_counter = 0
+        self.fall_cloak_up_time = 60
 
         # wall jump
         self.wall_to_right = False
@@ -265,11 +269,14 @@ class Player():
                 self.looking_dir = self.dash_speed_current // self.dash_speed
                 self.dash_direction = self.dash_speed_current // self.dash_speed
 
+            self.current_animations[self.animation_start_falling] = False
             # jump / doublejump end
             if self.jump_timer == 0 and self.jump_timer_last_frame > 0:
                 self.dy = self.jump_exit_speed
+                self.current_animations[self.animation_start_falling] = True
             if self.double_jump_timer == 0 and self.double_jump_timer_last_frame > 0:
                 self.dy = self.double_jump_exit_speed
+                self.current_animations[self.animation_start_falling] = True
 
         if self.dash_timer <= 0:
 
@@ -343,6 +350,10 @@ class Player():
         if self.dash_timer > 0:
             self.current_animations[self.animation_dash] = True
 
+        self.current_animations[self.animation_ascending] = False
+        if self.jump_timer > 0:
+            self.current_animations[self.animation_ascending] = True
+        
         # self.animation_walk = 0             done
         # self.animation_fall = 1             
         # self.animation_ascending = 2        
@@ -352,7 +363,8 @@ class Player():
         # self.animation_claw = 6             done
         # self.animation_cdash_stop_wall = 7  done
         # self.animation_cdash_stop = 8       done
-        # self.animation_wings = 9            
+        # self.animation_wings = 9     
+        # self.animation_start_falling = 10       
     
     @staticmethod
     def twoDigitNum(n):
@@ -367,9 +379,27 @@ class Player():
         self.animation_frame += 1
         image_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
         flip = 1
+        # if not self.grounded:
+        #     # falling
         if self.current_animations[self.animation_walk]:
             image_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
             flip = 1
+        self.fall_counter += 1
+        if self.grounded:
+            self.fall_counter = 0
+        if self.current_animations[self.animation_start_falling]:
+            self.fall_counter = 0
+        if self.fall_counter != 0:
+            if self.fall_counter < self.fall_cloak_up_time: # fix snapping immeadietly
+                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.fall_counter / self.fall_cloak_up_time * 7) % 7 + 5)) + '.png'
+            else:
+                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 2 + 10)) + '.png'
+            
+
+        if self.current_animations[self.animation_ascending]:
+            flip = 1
+            image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.jump_timer / self.jump_time * 6) % 6)) + '.png'
+
         if self.current_animations[self.animation_claw]:
             image_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
             flip = -1
