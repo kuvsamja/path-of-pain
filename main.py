@@ -70,6 +70,8 @@ class Player():
         self.dx = 0
         self.dy = 0
         
+        self.animation_frame = 0
+        self.animation_speed = 0.2
         self.animation_walk = 0
         self.animation_fall = 1
         self.animation_ascending = 2
@@ -77,7 +79,7 @@ class Player():
         self.animation_cdash = 4
         self.animation_charging_cdash = 5
         self.animation_claw = 6
-        self.current_actions = [
+        self.current_animations = [
                                     False, # walking
                                     False, # falling
                                     False, # jumping(going up)
@@ -155,14 +157,17 @@ class Player():
         if self.grounded:
             self.acceleration_y = 0
 
-        if not self.in_cdash and not self.cdash_stopping:
+        self.current_animations[self.animation_walk] = False
+        if not self.in_cdash and not self.cdash_stopping and self.cdash_charge_timer <= 0:
             # basic movement (left-right)
-            if buttons[self.left_key]:
+            if buttons[self.left_key] and not buttons[self.right_key]:
                 self.dx -= self.speed
                 self.looking_dir = -1
-            if buttons[self.right_key]:
+                self.current_animations[self.animation_walk] = True
+            if buttons[self.right_key] and not buttons[self.left_key]:
                 self.dx += self.speed
                 self.looking_dir = 1
+                self.current_animations[self.animation_walk] = True
 
             # claw 
             self.wall_ride = False
@@ -289,9 +294,35 @@ class Player():
         self.camera.moveCamera(self)
 
         self.buttons_last_frame = buttons
-    
-    # def animate(self):
 
+        # self.animation_walk = 0
+        # self.animation_fall = 1
+        # self.animation_ascending = 2
+        # self.animation_dash = 3
+        # self.animation_cdash = 4
+        # self.animation_charging_cdash = 5
+        # self.animation_claw = 6
+    
+    @staticmethod
+    def twoDigitNum(n):
+        if int(n) < 10:
+            return '0' + n
+        return n
+
+    def animate(self, surface: pygame.surface.Surface):
+        x, y = self.draw(surface)
+        self.animation_frame += 1
+        image_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
+        if self.current_animations[self.animation_walk]:
+            image_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
+        
+        if self.looking_dir == 1:
+            sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
+        else:
+            sprite = pygame.image.load(image_name).convert_alpha()
+        
+
+        surface.blit(sprite, (x, y)) # cekaj
 
     def draw(self, surface):
         screen_x = (self.x - self.camera.x) / self.camera.world_width * self.camera.pixel_width
@@ -299,7 +330,8 @@ class Player():
         width = self.width / self.camera.world_width * self.camera.pixel_width
         height = self.height / self.camera.world_height * self.camera.pixel_height
 
-        pygame.draw.rect(surface, (255, 0, 0), (screen_x, screen_y, width, height))
+        # pygame.draw.rect(surface, (255, 0, 0), (screen_x, screen_y, width, height))
+        return screen_x, screen_y
     def worldColliding(self, world: World):
         for platform in world.platforms:
             if platform.playerCollision(self):
@@ -394,7 +426,7 @@ def main():
     window = pygame.display.set_mode((screen_width, screen_height))
 
     camera = Camera(0, 0, 768, 432, screen_width, screen_height)
-    player = Player(20, 20, 20, 40, camera)
+    player = Player(20, 20, 22, 50, camera)
 
     world = World(
         [
@@ -414,9 +446,9 @@ def main():
         
         buttons = pygame.key.get_pressed()
 
-        window.fill((0, 0, 0))
+        window.fill((50, 100, 240))
         player.move(buttons, world)
-        player.draw(window)
+        player.animate(window)
         world.draw(window, camera)
 
         pygame.display.flip()
