@@ -85,6 +85,7 @@ class Player():
         self.animation_wings = 9
         self.animation_start_falling = 10
         self.animation_wall_jump = 11
+        self.animation_wing_effect = 12
         self.current_animations = [
                                     False, # walking
                                     False, # falling
@@ -98,6 +99,7 @@ class Player():
                                     False, # Wings
                                     False, # Start falling
                                     False, # Wall jump
+                                    False, # Wing Effect
                                 ]
         self.looking_dir = 1
 
@@ -133,6 +135,7 @@ class Player():
         self.double_jump_timer_last_frame = -1
         self.double_jump_speed = 7
         self.double_jump_exit_speed = -2
+        self.wing_effect_timer = 0
         
         # dash
         self.can_dash = False
@@ -233,6 +236,7 @@ class Player():
 
             # double jump
             self.double_jump_timer -= 1
+            self.wing_effect_timer -= 1
 
             if not buttons[self.jump_key] or (self.grounded and self.wall_ride) or self.head_clipping:
                 self.double_jump_timer = 0
@@ -244,6 +248,7 @@ class Player():
                 if self.can_double_jump:
                     self.can_double_jump = False
                     self.double_jump_timer = self.double_jump_time
+                    self.wing_effect_timer = self.double_jump_time
                 self.dy = -self.jump_speed
             
 
@@ -466,19 +471,19 @@ class Player():
             else:
                 x_sec = x + width - 50
             y_sec = y - sprite2.get_height() / 2
-
         if self.current_animations[self.animation_wings]:
             flip = 1
-            has_secondary_animation = True
             sprite_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
             x += -self.looking_dir * 7
-            secondary_sprite_name = 'assets/the-knight/100.Double Jump Wings 2/100-' + self.twoDigitNum(str(int(((self.double_jump_time - self.double_jump_timer) / self.double_jump_time) * 6) % 6)) + '.png'
+            
+
+        if self.wing_effect_timer > 0:
+            has_secondary_animation = True
+            secondary_sprite_name = 'assets/the-knight/100.Double Jump Wings 2/100-' + self.twoDigitNum(str(int(((self.double_jump_time - self.wing_effect_timer) / self.double_jump_time) * 6) % 6)) + '.png'
             sprite2 = pygame.transform.flip(pygame.image.load(secondary_sprite_name).convert_alpha(), True, False)
             
             x_sec = x - sprite2.get_width() / 2
             y_sec = y - sprite2.get_height() / 2
-
-        
         if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(sprite_name).convert_alpha(), True, False)
         else:
