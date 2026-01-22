@@ -363,18 +363,19 @@ class Player():
         self.current_animations[self.animation_wings] = False
         if self.double_jump_timer > 0:
             self.current_animations[self.animation_wings] = True
-        # self.animation_walk = 0             done
-        # self.animation_fall = 1             done
-        # self.animation_ascending = 2        done
-        # self.animation_dash = 3             done
-        # self.animation_cdash = 4            done
-        # self.animation_charging_cdash = 5   done
-        # self.animation_claw = 6             done
-        # self.animation_cdash_stop_wall = 7  done
-        # self.animation_cdash_stop = 8       done
-        # self.animation_wings = 9            
-        # self.animation_start_falling = 10   done
-        # self.animation_wall_jump = 11       
+        #                                     basic animation   effects
+        # self.animation_walk = 0             done              /
+        # self.animation_fall = 1             done              /
+        # self.animation_ascending = 2        done              /
+        # self.animation_dash = 3             done              
+        # self.animation_cdash = 4            done              
+        # self.animation_charging_cdash = 5   done              
+        # self.animation_claw = 6             done              /
+        # self.animation_cdash_stop_wall = 7  done              
+        # self.animation_cdash_stop = 8       done              
+        # self.animation_wings = 9            done              
+        # self.animation_start_falling = 10   done              /
+        # self.animation_wall_jump = 11                         
     
     @staticmethod
     def twoDigitNum(n):
@@ -386,75 +387,106 @@ class Player():
         x, y, width, height = self.draw(surface)
         x += width / 2
         y += height / 2
+        has_secondary_animation = False
+        x_sec = x
+        y_sec = y
         self.animation_frame += 1
-        image_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
+        sprite_name = 'assets/the-knight/001.Idle/001-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 9)) + '.png'
         flip = 1
         # if not self.grounded:
         #     # falling
         if self.current_animations[self.animation_walk]:
-            image_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
+            sprite_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
             flip = 1
+        has_secondary_animation = False
         self.fall_counter += 1
         if self.grounded:
             self.fall_counter = 0
         if self.current_animations[self.animation_start_falling]:
             self.fall_counter = 0
+            has_secondary_animation = False
         if self.fall_counter != 0:
+            has_secondary_animation = False
             if self.fall_counter < self.fall_cloak_up_time: # fix snapping immeadietly
-                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.fall_counter / self.fall_cloak_up_time * 6) % 6 + 6)) + '.png'
+                sprite_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.fall_counter / self.fall_cloak_up_time * 6) % 6 + 6)) + '.png'
             else:
-                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 2 + 10)) + '.png'
+                sprite_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 2 + 10)) + '.png'
             
 
         if self.current_animations[self.animation_ascending]:
             flip = 1
-            image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int((self.jump_time - self.jump_timer) / self.jump_time * 6) % 6)) + '.png'
+            sprite_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int((self.jump_time - self.jump_timer) / self.jump_time * 6) % 6)) + '.png'
+            has_secondary_animation = False
 
         if self.current_animations[self.animation_claw]:
-            image_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
+            sprite_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
             flip = -1
+            has_secondary_animation = False
         if self.current_animations[self.animation_charging_cdash]:
             flip = 1
+            # has_secondary_animation = True
             if self.cdash_charge_timer < self.cdash_charge_time:
-                image_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 8)) + '.png'
+                sprite_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 8)) + '.png'
             else:
-                image_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 4 + 4)) + '.png'
+                sprite_name = 'assets/the-knight/085.SD Charge Ground/085-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 8) % 4 + 4)) + '.png'
         if self.current_animations[self.animation_cdash]:
             flip = 1
-            image_name = 'assets/the-knight/086.SD Dash/086-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
+            # has_secondary_animation = True
+            sprite_name = 'assets/the-knight/086.SD Dash/086-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
             # flip = -int(self.dx / abs(self.dx))
         if self.current_animations[self.animation_cdash_stop]:
             flip = 1
-            image_name = 'assets/the-knight/088.SD Charge Ground End/088-' + self.twoDigitNum(str(int((self.cdash_stop_time - self.cdash_stop_timer) / self.cdash_stop_time * 4) % 4)) + '.png'
+            sprite_name = 'assets/the-knight/088.SD Charge Ground End/088-' + self.twoDigitNum(str(int((self.cdash_stop_time - self.cdash_stop_timer) / self.cdash_stop_time * 4) % 4)) + '.png'
             # flip = -int(self.dx / abs(self.dx))
         if self.current_animations[self.animation_cdash_stop_wall]:
             flip = -1
-            image_name = 'assets/the-knight/091.SD Hit Wall/091-00.png'
+            sprite_name = 'assets/the-knight/091.SD Hit Wall/091-00.png'
         if self.current_animations[self.animation_charging_cdash] and self.current_animations[self.animation_claw]:
             flip = -1
+            # has_secondary_animation = True
             if self.cdash_charge_timer < self.cdash_charge_time:
-                image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 9)) + '.png'
+                sprite_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 9)) + '.png'
             else:
-                image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 2 + 7)) + '.png'
+                sprite_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 2 + 7)) + '.png'
         if self.current_animations[self.animation_dash]:
             flip = 1
-            image_name = 'assets/the-knight/002.Dash/002-' + self.twoDigitNum(str(int((self.dash_time - self.dash_timer) / self.dash_time * 12) % 12)) + '.png'
+            has_secondary_animation = True
+            sprite_name = 'assets/the-knight/002.Dash/002-' + self.twoDigitNum(str(int((self.dash_time - self.dash_timer) / self.dash_time * 12) % 12)) + '.png'
             x += -self.looking_dir * 50
+
+            secondary_sprite_name = 'assets/the-knight/082.Dash Effect/082-' + self.twoDigitNum(str(int((self.dash_time - self.dash_timer) / self.dash_time * 8) % 8)) + '.png'
+            print(int((self.dash_time - self.dash_timer) / self.dash_time * 8) % 8)
+            if self.looking_dir * flip == 1:
+                sprite2 = pygame.image.load(secondary_sprite_name).convert_alpha()
+            else:
+                sprite2 = pygame.transform.flip(pygame.image.load(secondary_sprite_name).convert_alpha(), True, False)
+            
+            if self.looking_dir == 1:
+                x_sec = x - sprite2.get_width() + 50
+            else:
+                x_sec = x + width - 50
+            y_sec = y - sprite2.get_height() / 2
+
         if self.current_animations[self.animation_wings]:
             flip = 1
-            image_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
+            # has_secondary_animation = True
+            sprite_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
             x += -self.looking_dir * 7
         
         
-        
+
         
         if self.looking_dir * flip == 1:
-            sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
+            sprite = pygame.transform.flip(pygame.image.load(sprite_name).convert_alpha(), True, False)
         else:
-            sprite = pygame.image.load(image_name).convert_alpha()
+            sprite = pygame.image.load(sprite_name).convert_alpha()
+        
         x -= sprite.get_width() / 2
         y -= sprite.get_height() / 2
-        surface.blit(sprite, (x, y)) # cekaj
+        surface.blit(sprite, (x, y))
+        if has_secondary_animation:
+            surface.blit(sprite2, (x_sec, y_sec))
+        
 
     def draw(self, surface):
         screen_x = (self.x - self.camera.x) / self.camera.world_width * self.camera.pixel_width
