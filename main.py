@@ -398,7 +398,7 @@ class Player():
         if self.current_animations[self.animation_walk]:
             sprite_name = 'assets/the-knight/005.Run/005-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 10 + 3)) + '.png'
             flip = 1
-        has_secondary_animation = False
+            has_secondary_animation = False
         self.fall_counter += 1
         if self.grounded:
             self.fall_counter = 0
@@ -469,11 +469,14 @@ class Player():
 
         if self.current_animations[self.animation_wings]:
             flip = 1
-            # has_secondary_animation = True
+            has_secondary_animation = True
             sprite_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
             x += -self.looking_dir * 7
-        
-        
+            secondary_sprite_name = 'assets/the-knight/100.Double Jump Wings 2/100-' + self.twoDigitNum(str(int(((self.double_jump_time - self.double_jump_timer) / self.double_jump_time) * 6) % 6)) + '.png'
+            sprite2 = pygame.transform.flip(pygame.image.load(secondary_sprite_name).convert_alpha(), True, False)
+            
+            x_sec = x - sprite2.get_width() / 2
+            y_sec = y - sprite2.get_height() / 2
 
         
         if self.looking_dir * flip == 1:
@@ -483,9 +486,9 @@ class Player():
         
         x -= sprite.get_width() / 2
         y -= sprite.get_height() / 2
-        surface.blit(sprite, (x, y))
         if has_secondary_animation:
             surface.blit(sprite2, (x_sec, y_sec))
+        surface.blit(sprite, (x, y))
         
 
     def draw(self, surface):

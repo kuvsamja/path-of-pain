@@ -9,3 +9,4 @@
 - [ ] Change the dash speed formula
 - [ ] Finish animations
 - [ ] Delay between dashes
+- [ ] Remove red sprite bounding boxes!!!!!!!!!!!!!!!!!!!!!
