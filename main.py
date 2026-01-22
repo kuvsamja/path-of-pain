@@ -391,14 +391,14 @@ class Player():
             self.fall_counter = 0
         if self.fall_counter != 0:
             if self.fall_counter < self.fall_cloak_up_time: # fix snapping immeadietly
-                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.fall_counter / self.fall_cloak_up_time * 7) % 7 + 5)) + '.png'
+                image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.fall_counter / self.fall_cloak_up_time * 6) % 6 + 6)) + '.png'
             else:
                 image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 2 + 10)) + '.png'
             
 
         if self.current_animations[self.animation_ascending]:
             flip = 1
-            image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int(self.jump_timer / self.jump_time * 6) % 6)) + '.png'
+            image_name = 'assets/the-knight/003.Airborne/003-' + self.twoDigitNum(str(int((self.jump_time - self.jump_timer) / self.jump_time * 6) % 6)) + '.png'
 
         if self.current_animations[self.animation_claw]:
             image_name = 'assets/the-knight/084.Wall Slide/084-' + self.twoDigitNum(str(int(self.animation_frame*self.animation_speed) % 4)) + '.png'
