@@ -84,6 +84,7 @@ class Player():
         self.animation_cdash_stop = 8
         self.animation_wings = 9
         self.animation_start_falling = 10
+        self.animation_wall_jump = 11
         self.current_animations = [
                                     False, # walking
                                     False, # falling
@@ -96,6 +97,7 @@ class Player():
                                     False, # cdash stop
                                     False, # Wings
                                     False, # Start falling
+                                    False, # Wall jump
                                 ]
         self.looking_dir = 1
 
@@ -126,7 +128,7 @@ class Player():
 
         # double jump
         self.can_double_jump = False
-        self.double_jump_time = 20
+        self.double_jump_time = 25
         self.double_jump_timer = 0
         self.double_jump_timer_last_frame = -1
         self.double_jump_speed = 7
@@ -268,8 +270,12 @@ class Player():
                 self.acceleration_y = 0
                 self.looking_dir = self.dash_speed_current // self.dash_speed
                 self.dash_direction = self.dash_speed_current // self.dash_speed
+                
+                self.jump_timer = 0
+                self.double_jump_timer = 0
 
             self.current_animations[self.animation_start_falling] = False
+
             # jump / doublejump end
             if self.jump_timer == 0 and self.jump_timer_last_frame > 0:
                 self.dy = self.jump_exit_speed
@@ -353,18 +359,22 @@ class Player():
         self.current_animations[self.animation_ascending] = False
         if self.jump_timer > 0:
             self.current_animations[self.animation_ascending] = True
-        
+
+        self.current_animations[self.animation_wings] = False
+        if self.double_jump_timer > 0:
+            self.current_animations[self.animation_wings] = True
         # self.animation_walk = 0             done
-        # self.animation_fall = 1             
-        # self.animation_ascending = 2        
+        # self.animation_fall = 1             done
+        # self.animation_ascending = 2        done
         # self.animation_dash = 3             done
         # self.animation_cdash = 4            done
         # self.animation_charging_cdash = 5   done
         # self.animation_claw = 6             done
         # self.animation_cdash_stop_wall = 7  done
         # self.animation_cdash_stop = 8       done
-        # self.animation_wings = 9     
-        # self.animation_start_falling = 10       
+        # self.animation_wings = 9            
+        # self.animation_start_falling = 10   done
+        # self.animation_wall_jump = 11       
     
     @staticmethod
     def twoDigitNum(n):
@@ -428,8 +438,16 @@ class Player():
                 image_name = 'assets/the-knight/097.SD Wall Charge/097-' + self.twoDigitNum(str(int(self.cdash_charge_timer / self.cdash_charge_time * 9) % 2 + 7)) + '.png'
         if self.current_animations[self.animation_dash]:
             flip = 1
-            image_name = 'assets/the-knight/002.Dash/002-' + self.twoDigitNum(str(int(self.dash_timer / self.dash_time * 12) % 12)) + '.png'
+            image_name = 'assets/the-knight/002.Dash/002-' + self.twoDigitNum(str(int((self.dash_time - self.dash_timer) / self.dash_time * 12) % 12)) + '.png'
             x += -self.looking_dir * 50
+        if self.current_animations[self.animation_wings]:
+            flip = 1
+            image_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
+            x += -self.looking_dir * 7
+        
+        
+        
+        
         if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(image_name).convert_alpha(), True, False)
         else:
