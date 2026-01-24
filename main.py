@@ -144,7 +144,7 @@ class Player():
         self.dash_time = 20
         self.dash_direction = 1
 
-        #cdash
+        # cdash
         self.can_cdash = False
         self.cdash_speed = 15
         self.cdash_charge_time = 50
@@ -154,16 +154,25 @@ class Player():
         self.cdash_stopping = False
         self.cdash_stop_wall = False
         self.cdash_charge_timer = 0
+        self.in_cdash = False
+        self.cdash_timer = 0
+
+        # nail
+        self.nail_time = 17
+        self.nail_timer = 0
+        self.nail_direction = 0  # 0=up, 1=down, 2=left, 3=right
+        self.alternate_nail = 1
 
         # CONTROLS
         self.buttons_last_frame = []
         self.jump_key = pygame.K_z
         self.left_key = pygame.K_LEFT
         self.right_key = pygame.K_RIGHT
+        self.down_key = pygame.K_DOWN
+        self.up_key = pygame.K_UP
         self.dash_key = pygame.K_LSHIFT
         self.cdash_key = pygame.K_c
-        self.in_cdash = False
-        self.cdash_timer = 0
+        self.nail_key = pygame.K_x
 
     def move(self, buttons, world: World):
         self.jump_timer_last_frame = self.jump_timer
@@ -329,6 +338,26 @@ class Player():
                 self.cdash_charge_timer = 0
 
 
+        if not self.in_cdash and not self.cdash_charge_timer > 0 and not self.cdash_stopping and not self.cdash_stop_wall and self.dash_timer <= 0 and not self.wall_ride:
+            # nail
+            if (buttons[self.nail_key] and not self.buttons_last_frame[self.nail_key]) and self.nail_timer <= 0:
+                self.nail_timer = self.nail_time
+                vertical = buttons[self.up_key] - buttons[self.down_key]
+                if vertical == 1 and not self.wall_ride:
+                    self.nail_direction = 0
+                elif vertical == -1 and not self.grounded:
+                    self.nail_direction = 1
+                else:
+                    if self.looking_dir == 1:
+                        self.alternate_nail *= -1
+                        self.nail_direction = 3
+                    if self.looking_dir == -1:
+                        self.nail_direction = 2
+                        self.alternate_nail *= -1
+            
+        if self.nail_timer > 0:
+            self.nail_timer -= 1
+
 
         self.x += self.dx
         self.y += self.dy
@@ -475,15 +504,55 @@ class Player():
             flip = 1
             sprite_name = 'assets/the-knight/098.Double Jump/098-' + self.twoDigitNum(str(int((self.double_jump_time - self.double_jump_timer) / self.double_jump_time * 8) % 8)) + '.png'
             x += -self.looking_dir * 7
-            
+        
 
         if self.wing_effect_timer > 0:
             has_secondary_animation = True
             secondary_sprite_name = 'assets/the-knight/100.Double Jump Wings 2/100-' + self.twoDigitNum(str(int(((self.double_jump_time - self.wing_effect_timer) / self.double_jump_time) * 6) % 6)) + '.png'
             sprite2 = pygame.transform.flip(pygame.image.load(secondary_sprite_name).convert_alpha(), True, False)
-            
+        
             x_sec = x - sprite2.get_width() / 2
             y_sec = y - sprite2.get_height() / 2
+        has_nail_sprite = False
+        if self.nail_timer > 0:
+            nail_dir = 1
+            has_nail_sprite = True
+            if self.nail_direction == 0:
+                nail_sprite_name = 'assets/the-knight/015.UpSlashEffect/015-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                nail_sprite = pygame.image.load(nail_sprite_name).convert_alpha()
+                x_nail = x - nail_sprite.get_width()/2
+                y_nail = y - nail_sprite.get_height()
+                
+            if self.nail_direction == 1:
+                nail_sprite_name = 'assets/the-knight/016.DownSlashEffect/016-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                nail_sprite = pygame.image.load(nail_sprite_name).convert_alpha()
+                x_nail = x - nail_sprite.get_width()/2
+                y_nail = y
+            if self.nail_direction == 2:
+                nail_dir = 1
+                if self.alternate_nail == 1:
+                    nail_sprite_name = 'assets/the-knight/007.SlashEffect/007-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                if self.alternate_nail == -1:
+                    nail_sprite_name = 'assets/the-knight/008.SlashEffectAlt/008-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                nail_sprite = pygame.image.load(nail_sprite_name).convert_alpha()
+                x_nail = x - nail_sprite.get_width()
+                y_nail = y - nail_sprite.get_height() / 2
+            if self.nail_direction == 3:
+                nail_dir = -1
+                if self.alternate_nail == 1:
+                    nail_sprite_name = 'assets/the-knight/007.SlashEffect/007-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                if self.alternate_nail == -1:
+                    nail_sprite_name = 'assets/the-knight/008.SlashEffectAlt/008-' + self.twoDigitNum(str(int(((self.nail_time - self.nail_timer) / self.nail_time) * 6) % 6)) + '.png'
+                nail_sprite = pygame.transform.flip(pygame.image.load(nail_sprite_name).convert_alpha(), True, False)
+                x_nail = x
+                y_nail = y - nail_sprite.get_height() / 2
+                
+            # if nail_dir == 1:
+            #     nail_sprite = pygame.image.load(nail_sprite_name).convert_alpha()
+            # else:
+            #     nail_sprite = pygame.transform.flip(pygame.image.load(nail_sprite_name).convert_alpha(), True, False)
+
+
         if self.looking_dir * flip == 1:
             sprite = pygame.transform.flip(pygame.image.load(sprite_name).convert_alpha(), True, False)
         else:
@@ -491,6 +560,9 @@ class Player():
         
         x -= sprite.get_width() / 2
         y -= sprite.get_height() / 2
+        if has_nail_sprite:
+            surface.blit(nail_sprite, (x_nail, y_nail))
+
         if has_secondary_animation:
             surface.blit(sprite2, (x_sec, y_sec))
         surface.blit(sprite, (x, y))
@@ -534,27 +606,27 @@ class Player():
         self.wall_to_right = False
         self.wall_to_left = False
 
-        feet_box = AxisAlignedBox(self.x, self.y + self.touch_check_height + self.height, self.width, self.touch_check_height)
-        head_box = AxisAlignedBox(self.x, self.y - self.touch_check_height, self.width, self.touch_check_height)
-        left_box = AxisAlignedBox(self.x - self.touch_check_width, self.y + self.height / 4, self.touch_check_width, self.height / 2)
-        right_box = AxisAlignedBox(self.x + self.width, self.y + self.height / 4, self.touch_check_width, self.height / 2)
+        feet_box = AxisAlignedBox(self.x, self.y + self.touch_check_height + self.height, self.width, self.touch_check_height, "collision")
+        head_box = AxisAlignedBox(self.x, self.y - self.touch_check_height, self.width, self.touch_check_height, "collision")
+        left_box = AxisAlignedBox(self.x - self.touch_check_width, self.y + self.height / 4, self.touch_check_width, self.height / 2, "collision")
+        right_box = AxisAlignedBox(self.x + self.width, self.y + self.height / 4, self.touch_check_width, self.height / 2, "collision")
 
-        if world.AABColliding(feet_box):
+        if world.platformCollisions(feet_box):
             self.grounded = True
-        if world.AABColliding(head_box):
+        if world.platformCollisions(head_box):
             self.head_clipping = True
-        if world.AABColliding(left_box):
+        if world.platformCollisions(left_box):
             self.wall_to_left = True
-        if world.AABColliding(right_box):
+        if world.platformCollisions(right_box):
             self.wall_to_right = True
-
-
+        
 class AxisAlignedBox():
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, object_type):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
+        self.object_type = object_type
     def draw(self, surface, camera):
         screen_x = (self.x - camera.x) / camera.world_width * camera.pixel_width
         screen_y = (self.y - camera.y) / camera.world_height * camera.pixel_height
@@ -586,9 +658,9 @@ class World():
     def draw(self, surface, camera):
         for platform in self.platforms:
             platform.draw(surface, camera)
-    def AABColliding(self, box: AxisAlignedBox):
+    def platformCollisions(self, box: AxisAlignedBox):
         for platform in self.platforms:
-            if platform.AABCollision(box):
+            if platform.object_type == "plat" and platform.AABCollision(box):
                 return True
         return False
 
@@ -604,12 +676,12 @@ def main():
 
     world = World(
         [
-            AxisAlignedBox(-1000, 250, 4000, 300),
-            AxisAlignedBox(50, 125, 100, 20),
-            AxisAlignedBox(350, 125, 100, 20),
-            AxisAlignedBox(175, 0, 100, 200),
-            AxisAlignedBox(50, -125, 100, 20),
-            AxisAlignedBox(175, -250, 100, 20),
+            AxisAlignedBox(-1000, 250, 4000, 300, "plat"),
+            AxisAlignedBox(50, 125, 100, 20, "plat"),
+            AxisAlignedBox(350, 125, 100, 20, "plat"),
+            AxisAlignedBox(175, 0, 100, 200, "plat"),
+            AxisAlignedBox(50, -125, 100, 20, "plat"),
+            AxisAlignedBox(175, -250, 100, 20, "plat"),
         ]
     )
 
